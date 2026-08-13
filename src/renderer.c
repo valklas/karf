@@ -41,7 +41,10 @@ bool renderer_execute(const char *xml_project_path,
         perror("fork failed");
         return false;
     } else if (pid == 0) {
-        // Child process
+        // Child process: set environment variables to suppress FFmpeg / MLT deprecation warnings
+        setenv("AV_LOG_LEVEL", "error", 1);
+        setenv("MLT_LOG_LEVEL", "error", 1);
+
         if (engine == RENDER_ENGINE_MELT) {
             char consumer_arg[1024];
             snprintf(consumer_arg, sizeof(consumer_arg), "avformat:%s", output_video_path);
@@ -53,6 +56,8 @@ bool renderer_execute(const char *xml_project_path,
             args[arg_idx++] = "-consumer";
             args[arg_idx++] = consumer_arg;
             args[arg_idx++] = "real_time=-1";
+            args[arg_idx++] = "dc=0";
+            args[arg_idx++] = "mlt_log=quiet";
 
             if (ends_with_icase(output_video_path, ".gif")) {
                 args[arg_idx++] = "vcodec=gif";
