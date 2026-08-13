@@ -1,8 +1,13 @@
+#define _DEFAULT_SOURCE
+
 #include "cli.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <libgen.h>
+#include <limits.h>
 
 void cli_options_init(CliOptions *opts) {
     if (!opts) return;
@@ -11,6 +16,36 @@ void cli_options_init(CliOptions *opts) {
     opts->template_file = NULL;
     opts->show_help = false;
     opts->show_version = false;
+}
+
+static char *resolve_to_absolute_path(const char *path, bool must_exist) {
+    if (!path) return NULL;
+
+    char resolved[PATH_MAX];
+    if (realpath(path, resolved) != NULL) {
+        return strdup(resolved);
+    }
+
+    if (must_exist) {
+        return NULL;
+    }
+
+    // For output files that might not exist yet, resolve parent dir
+    char path_copy[PATH_MAX];
+    strncpy(path_copy, path, sizeof(path_copy) - 1);
+    path_copy[sizeof(path_copy) - 1] = '\0';
+
+    char *dir = dirname(path_copy);
+    char dir_resolved[PATH_MAX];
+    if (realpath(dir, dir_resolved) != NULL) {
+        strncpy(path_copy, path, sizeof(path_copy) - 1);
+        char *base = basename(path_copy);
+        snprintf(resolved, sizeof(resolved), "%s/%s", dir_resolved, base);
+        return strdup(resolved);
+    }
+
+    // Fallback to original path copy if directory resolution fails
+    return strdup(path);
 }
 
 bool cli_parse_args(int argc, char *argv[], CliOptions *opts) {
@@ -28,7 +63,6 @@ bool cli_parse_args(int argc, char *argv[], CliOptions *opts) {
     int opt;
     int option_index = 0;
 
-    // Reset getopt optind
     optind = 1;
 
     while ((opt = getopt_long(argc, argv, "i:o:t:hv", long_options, &option_index)) != -1) {
@@ -77,6 +111,25 @@ bool cli_validate_options(const CliOptions *opts) {
         fprintf(stderr, "Error: Cannot read template XML file '%s'.\n", opts->template_file);
         return false;
     }
+
+    // Resolve paths to absolute paths
+    char *abs_input = resolve_to_absolute_path(opts->input_image, true);
+    char *abs_template = resolve_to_absolute_path(opts->template_file, true);
+    char *abs_output = resolve_to_absolute_path(opts->output_video, false);
+
+    if (!abs_input || !abs_template || !abs_output) {
+        fprintf(stderr, "Error: Failed to resolve absolute file paths.\n");
+        free(abs_input);
+        free(abs_template);
+        free(abs_output);
+        return false;
+    }
+
+    // Cast away const to store canonical absolute paths
+    CliOptions *mutable_opts = (CliOptions *)opts;
+    mutable_opts->input_image = abs_input;
+    mutable_opts->template_file = abs_template;
+    mutable_opts->output_video = abs_output;
 
     return true;
 }
