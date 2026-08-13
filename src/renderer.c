@@ -1,10 +1,21 @@
+#define _DEFAULT_SOURCE
+
 #include "renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+static bool ends_with_icase(const char *str, const char *suffix) {
+    if (!str || !suffix) return false;
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+    if (suffix_len > str_len) return false;
+    return (strcasecmp(str + str_len - suffix_len, suffix) == 0);
+}
 
 bool renderer_check_dependency(RenderEngine engine) {
     const char *binary_name = (engine == RENDER_ENGINE_MELT) ? "melt" : "kdenlive";
@@ -35,16 +46,27 @@ bool renderer_execute(const char *xml_project_path,
             char consumer_arg[1024];
             snprintf(consumer_arg, sizeof(consumer_arg), "avformat:%s", output_video_path);
 
-            char *args[] = {
-                "melt",
-                (char *)xml_project_path,
-                "-consumer",
-                consumer_arg,
-                "real_time=-1",
-                "vcodec=libx264",
-                "acodec=aac",
-                NULL
-            };
+            char *args[16];
+            int arg_idx = 0;
+            args[arg_idx++] = "melt";
+            args[arg_idx++] = (char *)xml_project_path;
+            args[arg_idx++] = "-consumer";
+            args[arg_idx++] = consumer_arg;
+            args[arg_idx++] = "real_time=-1";
+
+            if (ends_with_icase(output_video_path, ".gif")) {
+                args[arg_idx++] = "vcodec=gif";
+            } else if (ends_with_icase(output_video_path, ".mp4") ||
+                       ends_with_icase(output_video_path, ".mov") ||
+                       ends_with_icase(output_video_path, ".m4v")) {
+                args[arg_idx++] = "vcodec=libx264";
+                args[arg_idx++] = "acodec=aac";
+            } else if (ends_with_icase(output_video_path, ".webm")) {
+                args[arg_idx++] = "vcodec=libvpx-vp9";
+                args[arg_idx++] = "acodec=libopus";
+            }
+            args[arg_idx] = NULL;
+
             execvp("melt", args);
             perror("execvp melt failed");
             exit(EXIT_FAILURE);
