@@ -53,24 +53,26 @@ Paths may be relative, absolute, or use `~` (tilde) home directory shorthand.
 
 ```plaintext
 karf/
+├── .gitignore
 ├── AGENTS.md
+├── flake.lock
 ├── flake.nix
 ├── LICENSE
 ├── Makefile
+├── README.md
 ├── bin/
 │   └── karf
 ├── include/
 │   ├── cli.h
 │   ├── renderer.h
 │   └── xml_parser.h
-├── src/
-│   ├── cli.c
-│   ├── main.c
-│   ├── renderer.c
-│   └── xml_parser.c
-└── README.md
+└── src/
+    ├── cli.c
+    ├── main.c
+    ├── renderer.c
+    └── xml_parser.c
 
-4 directories, 12 files
+4 directories, 15 files
 ```
 
 ## License
