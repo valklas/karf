@@ -21,8 +21,22 @@ void cli_options_init(CliOptions *opts) {
 static char *resolve_to_absolute_path(const char *path, bool must_exist) {
     if (!path) return NULL;
 
+    char expanded_path[PATH_MAX];
+    if (path[0] == '~' && (path[1] == '/' || path[1] == '\0')) {
+        const char *home = getenv("HOME");
+        if (home) {
+            snprintf(expanded_path, sizeof(expanded_path), "%s%s", home, path + 1);
+        } else {
+            strncpy(expanded_path, path, sizeof(expanded_path) - 1);
+            expanded_path[sizeof(expanded_path) - 1] = '\0';
+        }
+    } else {
+        strncpy(expanded_path, path, sizeof(expanded_path) - 1);
+        expanded_path[sizeof(expanded_path) - 1] = '\0';
+    }
+
     char resolved[PATH_MAX];
-    if (realpath(path, resolved) != NULL) {
+    if (realpath(expanded_path, resolved) != NULL) {
         return strdup(resolved);
     }
 
@@ -32,20 +46,19 @@ static char *resolve_to_absolute_path(const char *path, bool must_exist) {
 
     // For output files that might not exist yet, resolve parent dir
     char path_copy[PATH_MAX];
-    strncpy(path_copy, path, sizeof(path_copy) - 1);
+    strncpy(path_copy, expanded_path, sizeof(path_copy) - 1);
     path_copy[sizeof(path_copy) - 1] = '\0';
 
     char *dir = dirname(path_copy);
     char dir_resolved[PATH_MAX];
     if (realpath(dir, dir_resolved) != NULL) {
-        strncpy(path_copy, path, sizeof(path_copy) - 1);
+        strncpy(path_copy, expanded_path, sizeof(path_copy) - 1);
         char *base = basename(path_copy);
         snprintf(resolved, sizeof(resolved), "%s/%s", dir_resolved, base);
         return strdup(resolved);
     }
 
-    // Fallback to original path copy if directory resolution fails
-    return strdup(path);
+    return strdup(expanded_path);
 }
 
 bool cli_parse_args(int argc, char *argv[], CliOptions *opts) {
@@ -102,30 +115,32 @@ bool cli_validate_options(const CliOptions *opts) {
         return false;
     }
 
-    if (access(opts->input_image, R_OK) != 0) {
-        fprintf(stderr, "Error: Cannot read input image file '%s'.\n", opts->input_image);
-        return false;
-    }
-
-    if (access(opts->template_file, R_OK) != 0) {
-        fprintf(stderr, "Error: Cannot read template XML file '%s'.\n", opts->template_file);
-        return false;
-    }
-
-    // Resolve paths to absolute paths
+    // Resolve paths with tilde expansion & canonical absolute resolution
     char *abs_input = resolve_to_absolute_path(opts->input_image, true);
     char *abs_template = resolve_to_absolute_path(opts->template_file, true);
     char *abs_output = resolve_to_absolute_path(opts->output_video, false);
 
-    if (!abs_input || !abs_template || !abs_output) {
-        fprintf(stderr, "Error: Failed to resolve absolute file paths.\n");
-        free(abs_input);
+    if (!abs_input) {
+        fprintf(stderr, "Error: Cannot read input image file '%s'.\n", opts->input_image);
         free(abs_template);
         free(abs_output);
         return false;
     }
 
-    // Cast away const to store canonical absolute paths
+    if (!abs_template) {
+        fprintf(stderr, "Error: Cannot read template XML file '%s'.\n", opts->template_file);
+        free(abs_input);
+        free(abs_output);
+        return false;
+    }
+
+    if (!abs_output) {
+        fprintf(stderr, "Error: Invalid output path '%s'.\n", opts->output_video);
+        free(abs_input);
+        free(abs_template);
+        return false;
+    }
+
     CliOptions *mutable_opts = (CliOptions *)opts;
     mutable_opts->input_image = abs_input;
     mutable_opts->template_file = abs_template;
@@ -142,7 +157,7 @@ void cli_print_help(const char *prog_name) {
     printf("Options:\n");
     printf("  -i, --input <path>     Path to the input replacement image (e.g. image.png)\n");
     printf("  -t, --template <path>  Path to the .kdenlive XML template file\n");
-    printf("  -o, --output <path>    Path for the output rendered video (e.g. output.mp4)\n");
+    printf("  -o, --output <path>    Path for the output rendered video (e.g. output.mp4|output.gif)\n");
     printf("  -h, --help             Displays this help user manual\n");
     printf("  -v, --version          Displays current version string\n\n");
     printf("Examples:\n");
