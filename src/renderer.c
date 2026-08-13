@@ -40,6 +40,9 @@ bool renderer_execute(const char *xml_project_path,
                 (char *)xml_project_path,
                 "-consumer",
                 consumer_arg,
+                "real_time=-1",
+                "vcodec=libx264",
+                "acodec=aac",
                 NULL
             };
             execvp("melt", args);
