@@ -65,6 +65,7 @@ karf/
 ├── include/
 │   ├── cli.h
 │   ├── renderer.h
+│   ├── version.h
 │   └── xml_parser.h
 └── src/
     ├── cli.c
@@ -72,7 +73,7 @@ karf/
     ├── renderer.c
     └── xml_parser.c
 
-4 directories, 15 files
+4 directories, 16 files
 ```
 
 ## License
