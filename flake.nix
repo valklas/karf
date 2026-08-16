@@ -20,7 +20,6 @@
           libxml2
           
           # Runtime Dependencies
-          kdePackages.kdenlive
           kdePackages.mlt      # Provides the 'melt' executable engine
           ffmpeg
 

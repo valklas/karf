@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     printf("Rendering project to '%s' using MLT engine...\n", opts.output_video);
 
-    bool render_ok = renderer_execute(temp_xml_path, opts.output_video, RENDER_ENGINE_MELT);
+    bool render_ok = renderer_execute(temp_xml_path, opts.output_video);
 
     xml_cleanup_temp_file(temp_xml_path);
 

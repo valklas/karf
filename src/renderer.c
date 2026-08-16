@@ -17,8 +17,8 @@ static bool ends_with_icase(const char *str, const char *suffix) {
     return (strcasecmp(str + str_len - suffix_len, suffix) == 0);
 }
 
-bool renderer_check_dependency(RenderEngine engine) {
-    const char *binary_name = (engine == RENDER_ENGINE_MELT) ? "melt" : "kdenlive";
+bool renderer_check_dependency(void) {
+    const char *binary_name = "melt";
     char command[256];
     snprintf(command, sizeof(command), "which %s > /dev/null 2>&1", binary_name);
     int status = system(command);
@@ -26,13 +26,11 @@ bool renderer_check_dependency(RenderEngine engine) {
 }
 
 bool renderer_execute(const char *xml_project_path, 
-                     const char *output_video_path, 
-                     RenderEngine engine) {
+                     const char *output_video_path) {
     if (!xml_project_path || !output_video_path) return false;
 
-    if (!renderer_check_dependency(engine)) {
-        const char *engine_name = (engine == RENDER_ENGINE_MELT) ? "melt" : "kdenlive";
-        fprintf(stderr, "Error: Required rendering engine '%s' is not installed or not in PATH.\n", engine_name);
+    if (!renderer_check_dependency()) {
+        fprintf(stderr, "Error: Required rendering engine 'melt' is not installed or not in PATH.\n");
         return false;
     }
 
@@ -45,48 +43,35 @@ bool renderer_execute(const char *xml_project_path,
         setenv("AV_LOG_LEVEL", "error", 1);
         setenv("MLT_LOG_LEVEL", "error", 1);
 
-        if (engine == RENDER_ENGINE_MELT) {
-            char consumer_arg[1024];
-            snprintf(consumer_arg, sizeof(consumer_arg), "avformat:%s", output_video_path);
+        char consumer_arg[1024];
+        snprintf(consumer_arg, sizeof(consumer_arg), "avformat:%s", output_video_path);
 
-            char *args[16];
-            int arg_idx = 0;
-            args[arg_idx++] = "melt";
-            args[arg_idx++] = (char *)xml_project_path;
-            args[arg_idx++] = "-consumer";
-            args[arg_idx++] = consumer_arg;
-            args[arg_idx++] = "real_time=-1";
-            args[arg_idx++] = "dc=0";
-            args[arg_idx++] = "mlt_log=quiet";
+        char *args[16];
+        int arg_idx = 0;
+        args[arg_idx++] = "melt";
+        args[arg_idx++] = (char *)xml_project_path;
+        args[arg_idx++] = "-consumer";
+        args[arg_idx++] = consumer_arg;
+        args[arg_idx++] = "real_time=-1";
+        args[arg_idx++] = "dc=0";
+        args[arg_idx++] = "mlt_log=quiet";
 
-            if (ends_with_icase(output_video_path, ".gif")) {
-                args[arg_idx++] = "vcodec=gif";
-            } else if (ends_with_icase(output_video_path, ".mp4") ||
-                       ends_with_icase(output_video_path, ".mov") ||
-                       ends_with_icase(output_video_path, ".m4v")) {
-                args[arg_idx++] = "vcodec=libx264";
-                args[arg_idx++] = "acodec=aac";
-            } else if (ends_with_icase(output_video_path, ".webm")) {
-                args[arg_idx++] = "vcodec=libvpx-vp9";
-                args[arg_idx++] = "acodec=libopus";
-            }
-            args[arg_idx] = NULL;
-
-            execvp("melt", args);
-            perror("execvp melt failed");
-            exit(EXIT_FAILURE);
-        } else {
-            char *args[] = {
-                "kdenlive",
-                "--render",
-                (char *)xml_project_path,
-                (char *)output_video_path,
-                NULL
-            };
-            execvp("kdenlive", args);
-            perror("execvp kdenlive failed");
-            exit(EXIT_FAILURE);
+        if (ends_with_icase(output_video_path, ".gif")) {
+            args[arg_idx++] = "vcodec=gif";
+        } else if (ends_with_icase(output_video_path, ".mp4") ||
+                   ends_with_icase(output_video_path, ".mov") ||
+                   ends_with_icase(output_video_path, ".m4v")) {
+            args[arg_idx++] = "vcodec=libx264";
+            args[arg_idx++] = "acodec=aac";
+        } else if (ends_with_icase(output_video_path, ".webm")) {
+            args[arg_idx++] = "vcodec=libvpx-vp9";
+            args[arg_idx++] = "acodec=libopus";
         }
+        args[arg_idx] = NULL;
+
+        execvp("melt", args);
+        perror("execvp melt failed");
+        exit(EXIT_FAILURE);
     } else {
         // Parent process
         int status;
