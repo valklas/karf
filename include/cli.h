@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define KARF_VERSION "v0.1.0-alpha.1"
+#include "version.h"
 
 typedef struct {
     char *input_image;

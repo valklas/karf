@@ -6,7 +6,7 @@ KARF (**K**denlive **A**utomated **R**ender **F**low) is a lightweight C command
 
 ### Requirements
 - Operating System: Linux
-- Dependencies: `kdePackages.mlt` / `kdePackages.kdenlive`, `libxml2`, `gcc`, `make`
+- Dependencies: `kdePackages.mlt` (`melt`), `libxml2`, `gcc`, `make`
 
 ### Quickstart with NixOS
 If you are using Nix, enter the development environment with all required dependencies pre-installed:
