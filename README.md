@@ -17,8 +17,16 @@ nix develop
 
 ### Building from Source
 
+Build the project with the included Makefile:
+
 ```bash
 make
+```
+
+The compiled binary is written to `bin/karf`. A prebuilt executable is also
+included at that path in the repository, so you can run it directly:
+
+```bash
 ./bin/karf -i input.png -o output.mp4 -t template.kdenlive
 ```
 
