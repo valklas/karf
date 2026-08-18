@@ -1,6 +1,6 @@
 # KARF
 
-KARF (**K**denlive **A**utomated **R**ender **F**low) is a lightweight C command-line tool designed to programmatically swap media assets inside Kdenlive templates and render video outputs headlessly. See the [wiki](https://github.com/valklas/wiki-karf.git) for more info.
+KARF (**K**denlive **A**utomated **R**ender **F**low) is a lightweight C command-line tool designed to programmatically swap media assets inside Kdenlive templates and render video outputs headlessly.
 
 ## Getting Started
 
